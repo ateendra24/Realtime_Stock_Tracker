@@ -112,12 +112,14 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         let results: FinnhubSearchResult[] = [];
 
         if (!trimmed) {
-            // Fetch top 10 popular symbols' profiles
+            // Fetch top 10 popular Indian symbols' profiles
             const top = POPULAR_STOCK_SYMBOLS.slice(0, 10);
             const profiles = await Promise.all(
                 top.map(async (sym) => {
                     try {
-                        const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
+                        // For Indian stocks, use NSE: prefix for Finnhub API
+                        const finnhubSymbol = `NSE:${sym}`;
+                        const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(finnhubSymbol)}&token=${token}`;
                         // Revalidate every hour
                         const profile = await fetchJSON<any>(url, 3600);
                         return { sym, profile } as { sym: string; profile: any };
@@ -131,9 +133,8 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
             results = profiles
                 .map(({ sym, profile }) => {
                     const symbol = sym.toUpperCase();
-                    const name: string | undefined = profile?.name || profile?.ticker || undefined;
-                    const exchange: string | undefined = profile?.exchange || undefined;
-                    if (!name) return undefined;
+                    const name: string = profile?.name || profile?.ticker || symbol;
+                    const exchange: string = profile?.exchange || 'NSE';
                     const r: FinnhubSearchResult = {
                         symbol,
                         description: name,
@@ -148,7 +149,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 })
                 .filter((x): x is FinnhubSearchResult => Boolean(x));
         } else {
-            const url = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&token=${token}`;
+            const url = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&exchange=NSE&token=${token}`;
             const data = await fetchJSON<FinnhubSearchResponse>(url, 1800);
             results = Array.isArray(data?.result) ? data.result : [];
         }
@@ -159,7 +160,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 const name = r.description || upper;
                 const exchangeFromDisplay = (r.displaySymbol as string | undefined) || undefined;
                 const exchangeFromProfile = (r as any).__exchange as string | undefined;
-                const exchange = exchangeFromDisplay || exchangeFromProfile || 'US';
+                const exchange = exchangeFromDisplay || exchangeFromProfile || 'NSE';
                 const type = r.type || 'Stock';
                 const item: StockWithWatchlistStatus = {
                     symbol: upper,

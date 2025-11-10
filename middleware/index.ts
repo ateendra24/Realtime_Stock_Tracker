@@ -3,9 +3,15 @@ import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
     const sessionCookie = getSessionCookie(request);
+    const { pathname } = request.nextUrl;
 
-    if (!sessionCookie) {
-        return NextResponse.redirect(new URL("/", request.url));
+    const publicPaths = ['/', '/stocks'];
+    const isPublicPath = publicPaths.some(path =>
+        pathname === path || pathname.startsWith(`${path}/`)
+    );
+
+    if (!sessionCookie && !isPublicPath) {
+        return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
     return NextResponse.next();
