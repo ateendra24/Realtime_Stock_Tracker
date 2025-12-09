@@ -25,12 +25,21 @@ const SignIn = () => {
     const onSubmit = async (data: SignInFormData) => {
         try {
             const result = await signInWithEmail(data);
-            if (result.success) router.push('/');
+            if (result.success) {
+                toast.success('Welcome back!', {
+                    description: 'Successfully signed in to your account'
+                });
+                router.push('/');
+            } else {
+                toast.error('Sign in failed', {
+                    description: result.error || 'Unable to sign in. Please try again'
+                });
+            }
         } catch (e) {
             console.error(e);
             toast.error('Sign in failed', {
-                description: e instanceof Error ? e.message : 'Failed to log in'
-            })
+                description: 'An unexpected error occurred. Please try again'
+            });
         }
     }
     return (
@@ -59,7 +68,7 @@ const SignIn = () => {
                 />
 
                 <Button type="submit" disabled={isSubmitting} className="yellow-btn w-full mt-5">
-                    {isSubmitting ? 'Creating account' : 'Start your Investing Journey'}
+                    {isSubmitting ? 'Signing in...' : 'Sign In'}
                 </Button>
 
                 <FooterLink text="Don't have an account?" linkText="Sign Up" href="/sign-up" />
